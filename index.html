@@ -373,8 +373,14 @@
 
   function startTable(id, guests) {
     var s=state[id];
+    if (!s) return;
     s.started=Date.now(); s.guests=guests;
-    document.getElementById('g-'+id).textContent='👤'+guests;
+    // Force visual update immediately
+    var el=document.getElementById('b-'+id);
+    if (el) el.className='tbl on';
+    var gEl=document.getElementById('g-'+id);
+    if (gEl) gEl.textContent='👤'+guests;
+    if (ivs[id]) { clearInterval(ivs[id]); delete ivs[id]; }
     ivs[id]=setInterval(function(){tick(id);},1000);
     tick(id);
     updateSummary();
@@ -422,21 +428,35 @@
   function parseCommand(transcript) {
     var t = transcript.toLowerCase().trim();
 
-    // Must start with "hey sarah" or "sarah"
+    // Must contain "sarah"
     if (t.indexOf('sarah') === -1) return;
-    t = t.replace(/hey\s+sarah/,'').replace(/sarah/,'').trim();
+    t = t.replace(/hey\s+sarah/g,'').replace(/sarah/g,'').trim();
 
-    // Extract table ID — match letter(s) + number e.g. "a12", "c5", "d8"
-    var tableMatch = t.match(/\b([a-d]\s*\d{1,2})\b/i);
-    var tableId = tableMatch ? tableMatch[1].replace(/\s/,'').toUpperCase() : null;
-
-    // Extract guest count
-    var guestMatch = t.match(/\b(\d{1,2})\b/);
-    // Also handle words like "four", "two" etc
+    // Number words map
     var words = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
-    var guestCount = guestMatch ? parseInt(guestMatch[1]) : null;
-    if (!guestCount) {
-      Object.keys(words).forEach(function(w){ if(t.indexOf(w)!==-1) guestCount=words[w]; });
+
+    // Normalize number words to digits in transcript
+    Object.keys(words).forEach(function(w){
+      t = t.replace(new RegExp('\\b'+w+'\\b','g'), words[w]);
+    });
+
+    // Extract table ID — handles "a 12", "a12", "table a12", "a-12"
+    var tableId = null;
+    var tableMatch = t.match(/\b([abcd])\s*[-]?\s*(\d{1,2})\b/i);
+    if (tableMatch) {
+      tableId = (tableMatch[1] + tableMatch[2]).toUpperCase();
+    }
+
+    // Extract guest count — first standalone number that isn't part of table ID
+    var guestCount = null;
+    var numMatches = t.match(/\b(\d{1,2})\b/g);
+    if (numMatches) {
+      for (var ni=0; ni<numMatches.length; ni++) {
+        var n = parseInt(numMatches[ni]);
+        // Skip if this number is the table number
+        if (tableId && tableId.slice(1) === String(n)) continue;
+        if (n >= 1 && n <= 20) { guestCount = n; break; }
+      }
     }
 
     // SEAT command: "seat 4 at a12" / "seat a12" / "open a12"
