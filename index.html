@@ -405,8 +405,8 @@
   // ── Sarah Voice Assistant ─────────────────────────────
   var btnSarah   = document.getElementById('btn-sarah');
   var sarahToast = document.getElementById('sarah-toast');
-  var recognition = null;
   var sarahToastTimer = null;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   function showToast(msg, color) {
     sarahToast.textContent = msg;
@@ -425,176 +425,69 @@
     window.speechSynthesis.speak(u);
   }
 
-  function parseCommand(transcript) {
-    var t = transcript.toLowerCase().trim();
-
-    // Must contain "sarah"
-    if (t.indexOf('sarah') === -1) return;
-    t = t.replace(/hey\s+sarah/g,'').replace(/sarah/g,'').trim();
-
-    // Normalize number words to digits
-    var words = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
-    Object.keys(words).forEach(function(w){
-      t = t.replace(new RegExp('\\b'+w+'\\b','g'), String(words[w]));
-    });
-
-    // ── SEAT: pattern is always "[seat-word] [number] [table]"
-    // Accepted mishearings of "seat": set, sit, said, send, see, seed, feet, heat, meet, neat, beat
-    var seatMatch = t.match(/\b(?:seat|set|sit|said|send|see|seed|feet|heat|meet|neat|beat)\b\s*(\d{1,2})\s*(?:at|to|on)?\s*([abcd])\s*[-]?\s*(\d{1,2})\b/i);
-    if (seatMatch) {
-      var guests  = parseInt(seatMatch[1]);
-      var tableId = (seatMatch[2] + seatMatch[3]).toUpperCase();
-      if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ "+tableId+" not found", '#ff1744'); return; }
-      if (state[tableId].started) { speak("Table "+tableId+" is already occupied"); showToast("⚠️ "+tableId+" occupied", '#ff9100'); return; }
-      startTable(tableId, guests);
-      speak("Seating "+guests+(guests===1?" guest":" guests")+" at table "+tableId);
-      showToast("✅ Seated "+guests+" at "+tableId, '#00e676');
-      return;
-    }
-
-    // ── CLEAR: "[clear-word] [table]"
-    // Accepted mishearings of "clear": claire, clear, close, clean
-    var clearMatch = t.match(/\b(?:clear|claire|close|clean)\b\s*(?:table)?\s*([abcd])\s*[-]?\s*(\d{1,2})\b/i);
-    if (clearMatch) {
-      var tableId = (clearMatch[1] + clearMatch[2]).toUpperCase();
-      if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ "+tableId+" not found", '#ff1744'); return; }
-      if (!state[tableId].started) { speak("Table "+tableId+" is already open"); showToast("⚠️ "+tableId+" already open", '#ff9100'); return; }
-      clearInterval(ivs[tableId]); delete ivs[tableId];
-      state[tableId].started=null; state[tableId].guests=0;
-      document.getElementById('b-'+tableId).className='tbl';
-      document.getElementById('tm-'+tableId).textContent='';
-      document.getElementById('g-'+tableId).textContent='';
-      updateSummary();
-      speak("Table "+tableId+" is now clear");
-      showToast("🗑️ "+tableId+" cleared", '#3a5a78');
-      return;
-    }
-
-    // ── HOW LONG: "how long [table]"
-    var timeMatch = t.match(/how\s+long\s*(?:is|has|for)?\s*(?:table)?\s*([abcd])\s*[-]?\s*(\d{1,2})\b/i);
-    if (timeMatch) {
-      var tableId = (timeMatch[1] + timeMatch[2]).toUpperCase();
-      if (!state[tableId] || !state[tableId].started) {
-        speak("Table "+tableId+" is open"); showToast("🟦 "+tableId+" is open", '#2d4a66'); return;
-      }
-      var sec=Math.floor((Date.now()-state[tableId].started)/1000);
-      var m=Math.floor(sec/60), s=sec%60;
-      speak("Table "+tableId+" has been seated for "+m+" minutes and "+s+" seconds");
-      showToast("⏱️ "+tableId+": "+pad(m)+":"+pad(s), '#00e676');
-      return;
-    }
-
-    // Unrecognized — don't respond so we don't interrupt the flow
-    showToast("🤷 Didn't catch that", '#3a5a78');
-  }
-
-  // Always-on listening — wakes on "Sarah"
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var awake = false;      // true = full command mode
-  var wakeTimer = null;   // auto-sleep after 6s if no command
-
-  function startListening() {
+  function activateSarah() {
     if (!SR) {
-      showToast("❌ Voice not supported in this browser", '#ff1744');
+      showToast("❌ Voice not supported in Safari — try allowing mic access", '#ff1744');
       return;
     }
-    if (recognition) { try { recognition.abort(); } catch(e){} }
-    recognition = new SR();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 3;
-    recognition.continuous = false;
 
-    recognition.onstart = function() {
-      if (awake) {
-        btnSarah.classList.add('listening');
-        btnSarah.textContent = '🎤 LISTENING...';
-      }
-    };
+    btnSarah.classList.add('listening');
+    btnSarah.textContent = '🎤 LISTENING...';
+    showToast("🎤 Listening...", '#00e676');
+    speak("Yes?");
+
+    var recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 5;
 
     recognition.onresult = function(e) {
-      // Check all alternatives for wake word or command
+      // Try all alternatives to find best match
       var transcripts = [];
       for (var i = 0; i < e.results.length; i++) {
         for (var j = 0; j < e.results[i].length; j++) {
-          transcripts.push(e.results[i][j].transcript.toLowerCase().trim());
+          transcripts.push(e.results[i][j].transcript);
         }
       }
-      var full = transcripts.join(' ');
-
-      if (!awake) {
-        // Waiting for wake word "Sarah"
-        if (full.indexOf('sarah') !== -1) {
-          awake = true;
-          btnSarah.classList.add('listening');
-          btnSarah.textContent = '🎤 LISTENING...';
-          speak("Yes?");
-          showToast("🎤 Sarah is listening...", '#00e676');
-          // Auto-sleep if no command follows
-          clearTimeout(wakeTimer);
-          wakeTimer = setTimeout(function() {
-            awake = false;
-            btnSarah.classList.remove('listening');
-            btnSarah.textContent = '🎤 SARAH';
-          }, 6000);
-        }
-      } else {
-        // Awake — process command
-        clearTimeout(wakeTimer);
-        awake = false;
-        btnSarah.classList.remove('listening');
-        btnSarah.textContent = '🎤 SARAH';
-        var transcript = e.results[0][0].transcript;
-        showToast('"' + transcript + '"', '#4a7fa5');
-        // Prepend "sarah" so parseCommand recognises it
-        parseCommand('sarah ' + transcript);
+      // Show what was heard
+      showToast('"' + transcripts[0] + '"', '#4a7fa5');
+      // Try each alternative until one matches
+      var matched = false;
+      for (var k = 0; k < transcripts.length; k++) {
+        if (parseCommand(transcripts[k])) { matched = true; break; }
+      }
+      if (!matched) {
+        showToast('🤷 Try: "seat 4 at A12" or "clear A12"', '#ff9100');
       }
     };
 
     recognition.onerror = function(e) {
-      if (e.error === 'no-speech' || e.error === 'aborted') return; // silent retry
-      showToast("❌ " + e.error, '#ff1744');
+      if (e.error === 'no-speech') {
+        showToast("🎤 No speech detected — tap Sarah to try again", '#3a5a78');
+      } else if (e.error === 'not-allowed') {
+        showToast("❌ Mic blocked — allow microphone in Safari settings", '#ff1744');
+      } else {
+        showToast("❌ Error: " + e.error, '#ff1744');
+      }
     };
 
     recognition.onend = function() {
-      // Always restart to keep listening
-      setTimeout(function() { startListening(); }, 300);
+      btnSarah.classList.remove('listening');
+      btnSarah.textContent = '🎤 SARAH';
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch(e) {
+      showToast("❌ Could not start mic: " + e.message, '#ff1744');
+      btnSarah.classList.remove('listening');
+      btnSarah.textContent = '🎤 SARAH';
+    }
   }
 
-  // Tap button to manually trigger awake mode
-  btnSarah.addEventListener('click', function() {
-    awake = true;
-    speak("Yes?");
-    showToast("🎤 Sarah is listening...", '#00e676');
-    btnSarah.classList.add('listening');
-    btnSarah.textContent = '🎤 LISTENING...';
-    clearTimeout(wakeTimer);
-    wakeTimer = setTimeout(function() {
-      awake = false;
-      btnSarah.classList.remove('listening');
-      btnSarah.textContent = '🎤 SARAH';
-    }, 6000);
-  });
-  btnSarah.addEventListener('touchend', function(e) {
-    e.preventDefault();
-    awake = true;
-    speak("Yes?");
-    showToast("🎤 Sarah is listening...", '#00e676');
-    btnSarah.classList.add('listening');
-    btnSarah.textContent = '🎤 LISTENING...';
-    clearTimeout(wakeTimer);
-    wakeTimer = setTimeout(function() {
-      awake = false;
-      btnSarah.classList.remove('listening');
-      btnSarah.textContent = '🎤 SARAH';
-    }, 6000);
-  });
-
-  // Start always-on listening on page load
-  startListening();
+  btnSarah.addEventListener('click', activateSarah);
+  btnSarah.addEventListener('touchend', function(e){ e.preventDefault(); activateSarah(); });
 
 })();
 </script>
