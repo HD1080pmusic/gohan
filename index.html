@@ -414,7 +414,7 @@
     sarahToast.style.color = color || '#cdd9e5';
     sarahToast.classList.add('show');
     clearTimeout(sarahToastTimer);
-    sarahToastTimer = setTimeout(function(){ sarahToast.classList.remove('show'); }, 3500);
+    sarahToastTimer = setTimeout(function(){ sarahToast.classList.remove('show'); }, 6000);
   }
 
   function speak(text) {
@@ -497,8 +497,7 @@
 
     btnSarah.classList.add('listening');
     btnSarah.textContent = '🎤 LISTENING...';
-    showToast("🎤 Listening...", '#00e676');
-    speak("Yes?");
+    showToast("🎤 Listening... say your command", '#00e676');
 
     var recognition = new SR();
     recognition.lang = 'en-US';
@@ -507,26 +506,28 @@
     recognition.maxAlternatives = 5;
 
     recognition.onresult = function(e) {
-      // Try all alternatives to find best match
       var transcripts = [];
       for (var i = 0; i < e.results.length; i++) {
         for (var j = 0; j < e.results[i].length; j++) {
           transcripts.push(e.results[i][j].transcript);
         }
       }
-      // Show what was heard
-      showToast('"' + transcripts[0] + '"', '#4a7fa5');
-      // Try each alternative until one matches
+      var heard = transcripts.join(' | ');
+      // Always show ALL alternatives so we can debug
+      showToast('Heard: ' + heard, '#4a7fa5');
       var matched = false;
       for (var k = 0; k < transcripts.length; k++) {
         if (parseCommand(transcripts[k])) { matched = true; break; }
       }
       if (!matched) {
-        showToast('🤷 Try: "seat 4 at A12" or "clear A12"', '#ff9100');
+        // Speak the feedback AFTER recognition ends to avoid iOS mic conflict
+        setTimeout(function(){ speak("I heard: " + transcripts[0] + ". Try saying seat, then the number, then the table."); }, 300);
       }
     };
 
     recognition.onerror = function(e) {
+      btnSarah.classList.remove('listening');
+      btnSarah.textContent = '🎤 SARAH';
       if (e.error === 'no-speech') {
         showToast("🎤 No speech detected — tap Sarah to try again", '#3a5a78');
       } else if (e.error === 'not-allowed') {
