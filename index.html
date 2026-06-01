@@ -432,52 +432,36 @@
     if (t.indexOf('sarah') === -1) return;
     t = t.replace(/hey\s+sarah/g,'').replace(/sarah/g,'').trim();
 
-    // Number words map
+    // Normalize number words to digits
     var words = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
-
-    // Normalize number words to digits in transcript
     Object.keys(words).forEach(function(w){
-      t = t.replace(new RegExp('\\b'+w+'\\b','g'), words[w]);
+      t = t.replace(new RegExp('\\b'+w+'\\b','g'), String(words[w]));
     });
 
-    // Extract table ID — handles "a 12", "a12", "table a12", "a-12"
-    var tableId = null;
-    var tableMatch = t.match(/\b([abcd])\s*[-]?\s*(\d{1,2})\b/i);
-    if (tableMatch) {
-      tableId = (tableMatch[1] + tableMatch[2]).toUpperCase();
-    }
-
-    // Extract guest count — first standalone number that isn't part of table ID
-    var guestCount = null;
-    var numMatches = t.match(/\b(\d{1,2})\b/g);
-    if (numMatches) {
-      for (var ni=0; ni<numMatches.length; ni++) {
-        var n = parseInt(numMatches[ni]);
-        // Skip if this number is the table number
-        if (tableId && tableId.slice(1) === String(n)) continue;
-        if (n >= 1 && n <= 20) { guestCount = n; break; }
-      }
-    }
-
-    // SEAT command: "seat 4 at a12" / "seat a12" / "open a12"
-    if (t.match(/seat|open|start|add/) && tableId) {
-      if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ Table "+tableId+" not found", '#ff1744'); return; }
-      if (state[tableId].started) { speak("Table "+tableId+" is already occupied"); showToast("⚠️ "+tableId+" already occupied", '#ff9100'); return; }
-      var guests = guestCount || 1;
+    // ── SEAT: pattern is always "[seat-word] [number] [table]"
+    // Accepted mishearings of "seat": set, sit, said, send, see, seed, feet, heat, meet, neat, beat
+    var seatMatch = t.match(/\b(?:seat|set|sit|said|send|see|seed|feet|heat|meet|neat|beat)\b\s*(\d{1,2})\s*(?:at|to|on)?\s*([abcd])\s*[-]?\s*(\d{1,2})\b/i);
+    if (seatMatch) {
+      var guests  = parseInt(seatMatch[1]);
+      var tableId = (seatMatch[2] + seatMatch[3]).toUpperCase();
+      if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ "+tableId+" not found", '#ff1744'); return; }
+      if (state[tableId].started) { speak("Table "+tableId+" is already occupied"); showToast("⚠️ "+tableId+" occupied", '#ff9100'); return; }
       startTable(tableId, guests);
       speak("Seating "+guests+(guests===1?" guest":" guests")+" at table "+tableId);
       showToast("✅ Seated "+guests+" at "+tableId, '#00e676');
       return;
     }
 
-    // CLEAR command: "clear a12" / "close a12" / "reset a12"
-    if (t.match(/clear|close|reset|done|finished|left/) && tableId) {
-      if (!state[tableId]) { speak("I don't see table "+tableId); return; }
+    // ── CLEAR: "[clear-word] [table]"
+    // Accepted mishearings of "clear": claire, clear, close, clean
+    var clearMatch = t.match(/\b(?:clear|claire|close|clean)\b\s*(?:table)?\s*([abcd])\s*[-]?\s*(\d{1,2})\b/i);
+    if (clearMatch) {
+      var tableId = (clearMatch[1] + clearMatch[2]).toUpperCase();
+      if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ "+tableId+" not found", '#ff1744'); return; }
       if (!state[tableId].started) { speak("Table "+tableId+" is already open"); showToast("⚠️ "+tableId+" already open", '#ff9100'); return; }
       clearInterval(ivs[tableId]); delete ivs[tableId];
       state[tableId].started=null; state[tableId].guests=0;
-      var el=document.getElementById('b-'+tableId);
-      el.className='tbl';
+      document.getElementById('b-'+tableId).className='tbl';
       document.getElementById('tm-'+tableId).textContent='';
       document.getElementById('g-'+tableId).textContent='';
       updateSummary();
@@ -486,8 +470,10 @@
       return;
     }
 
-    // STATUS command: "how long is a12" / "status a12" / "check a12"
-    if (t.match(/how long|status|check|time/) && tableId) {
+    // ── HOW LONG: "how long [table]"
+    var timeMatch = t.match(/how\s+long\s*(?:is|has|for)?\s*(?:table)?\s*([abcd])\s*[-]?\s*(\d{1,2})\b/i);
+    if (timeMatch) {
+      var tableId = (timeMatch[1] + timeMatch[2]).toUpperCase();
       if (!state[tableId] || !state[tableId].started) {
         speak("Table "+tableId+" is open"); showToast("🟦 "+tableId+" is open", '#2d4a66'); return;
       }
@@ -498,18 +484,8 @@
       return;
     }
 
-    // HOW MANY command
-    if (t.match(/how many|count|occupied|busy/)) {
-      var n=0, g=0;
-      Object.keys(state).forEach(function(id){if(state[id].started){n++;g+=state[id].guests;}});
-      speak(n===0?"All tables are open":n+" tables occupied with "+g+" guests total");
-      showToast(n===0?"All tables open":n+" tables · "+g+" guests", '#4a7fa5');
-      return;
-    }
-
-    // Unrecognized
-    speak("Sorry, I didn't understand that");
-    showToast("🤷 Didn't understand: "+transcript, '#ff9100');
+    // Unrecognized — don't respond so we don't interrupt the flow
+    showToast("🤷 Didn't catch that", '#3a5a78');
   }
 
   // Always-on listening — wakes on "Sarah"
