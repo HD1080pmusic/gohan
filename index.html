@@ -81,7 +81,27 @@
     color:#3a5a78; background:#0d1117;
     border-top:1px solid #1f2d3d; height:24px;
   }
-  #guest-modal {
+  #btn-sarah {
+    font-family:monospace; font-size:.68rem; padding:5px 12px;
+    border-radius:6px; cursor:pointer; border:1.5px solid #3a5a78;
+    background:#0d1a2a; color:#3a5a78; flex-shrink:0;
+    transition: all .2s;
+  }
+  #btn-sarah.listening {
+    border-color:#00e676; color:#00e676; background:#0f3a2e;
+    animation: mic-pulse 1s ease-in-out infinite;
+  }
+  @keyframes mic-pulse {
+    0%,100% { box-shadow: 0 0 4px rgba(0,230,118,.3); }
+    50%      { box-shadow: 0 0 12px rgba(0,230,118,.7); }
+  }
+  #sarah-toast {
+    display:none; position:fixed; bottom:32px; left:50%; transform:translateX(-50%);
+    background:#161b22; border:1.5px solid #2d4a66; border-radius:8px;
+    padding:8px 16px; font-family:monospace; font-size:.72rem; color:#cdd9e5;
+    z-index:1500; white-space:nowrap; max-width:90vw; text-align:center;
+  }
+  #sarah-toast.show { display:block; }
     display:none; position:fixed; inset:0; z-index:2000;
     background:rgba(0,0,0,.7);
     align-items:center; justify-content:center;
@@ -121,6 +141,7 @@
     <div class="leg"><span class="dot" style="border-color:#ff9100;background:#3a2200"></span>30-60m</div>
     <div class="leg"><span class="dot" style="border-color:#ff1744;background:#3a0000"></span>60m+</div>
   </div>
+  <button id="btn-sarah">🎤 SARAH</button>
   <button id="btn-mode" class="locked">🔒 LOCKED</button>
 </div>
 
@@ -211,6 +232,8 @@
     <button id="guest-cancel">CANCEL</button>
   </div>
 </div>
+
+<div id="sarah-toast"></div>
 
 <script>
 (function(){
@@ -368,6 +391,138 @@
     var n=0, g=0;
     Object.keys(state).forEach(function(id){if(state[id].started){n++;g+=state[id].guests;}});
     summary.textContent=n===0?'All tables open':n+' table'+(n!==1?'s':'')+' occupied · '+g+' guest'+(g!==1?'s':'');
+  }
+
+  // ── Sarah Voice Assistant ─────────────────────────────
+  var btnSarah   = document.getElementById('btn-sarah');
+  var sarahToast = document.getElementById('sarah-toast');
+  var recognition = null;
+  var sarahToastTimer = null;
+
+  function showToast(msg, color) {
+    sarahToast.textContent = msg;
+    sarahToast.style.borderColor = color || '#2d4a66';
+    sarahToast.style.color = color || '#cdd9e5';
+    sarahToast.classList.add('show');
+    clearTimeout(sarahToastTimer);
+    sarahToastTimer = setTimeout(function(){ sarahToast.classList.remove('show'); }, 3500);
+  }
+
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate = 1; u.pitch = 1.1; u.volume = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }
+
+  function parseCommand(transcript) {
+    var t = transcript.toLowerCase().trim();
+
+    // Must start with "hey sarah" or "sarah"
+    if (t.indexOf('sarah') === -1) return;
+    t = t.replace(/hey\s+sarah/,'').replace(/sarah/,'').trim();
+
+    // Extract table ID — match letter(s) + number e.g. "a12", "c5", "d8"
+    var tableMatch = t.match(/\b([a-d]\s*\d{1,2})\b/i);
+    var tableId = tableMatch ? tableMatch[1].replace(/\s/,'').toUpperCase() : null;
+
+    // Extract guest count
+    var guestMatch = t.match(/\b(\d{1,2})\b/);
+    // Also handle words like "four", "two" etc
+    var words = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
+    var guestCount = guestMatch ? parseInt(guestMatch[1]) : null;
+    if (!guestCount) {
+      Object.keys(words).forEach(function(w){ if(t.indexOf(w)!==-1) guestCount=words[w]; });
+    }
+
+    // SEAT command: "seat 4 at a12" / "seat a12" / "open a12"
+    if (t.match(/seat|open|start|add/) && tableId) {
+      if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ Table "+tableId+" not found", '#ff1744'); return; }
+      if (state[tableId].started) { speak("Table "+tableId+" is already occupied"); showToast("⚠️ "+tableId+" already occupied", '#ff9100'); return; }
+      var guests = guestCount || 1;
+      startTable(tableId, guests);
+      speak("Seating "+guests+(guests===1?" guest":" guests")+" at table "+tableId);
+      showToast("✅ Seated "+guests+" at "+tableId, '#00e676');
+      return;
+    }
+
+    // CLEAR command: "clear a12" / "close a12" / "reset a12"
+    if (t.match(/clear|close|reset|done|finished|left/) && tableId) {
+      if (!state[tableId]) { speak("I don't see table "+tableId); return; }
+      if (!state[tableId].started) { speak("Table "+tableId+" is already open"); showToast("⚠️ "+tableId+" already open", '#ff9100'); return; }
+      clearInterval(ivs[tableId]); delete ivs[tableId];
+      state[tableId].started=null; state[tableId].guests=0;
+      var el=document.getElementById('b-'+tableId);
+      el.className='tbl';
+      document.getElementById('tm-'+tableId).textContent='';
+      document.getElementById('g-'+tableId).textContent='';
+      updateSummary();
+      speak("Table "+tableId+" is now clear");
+      showToast("🗑️ "+tableId+" cleared", '#3a5a78');
+      return;
+    }
+
+    // STATUS command: "how long is a12" / "status a12" / "check a12"
+    if (t.match(/how long|status|check|time/) && tableId) {
+      if (!state[tableId] || !state[tableId].started) {
+        speak("Table "+tableId+" is open"); showToast("🟦 "+tableId+" is open", '#2d4a66'); return;
+      }
+      var sec=Math.floor((Date.now()-state[tableId].started)/1000);
+      var m=Math.floor(sec/60), s=sec%60;
+      speak("Table "+tableId+" has been seated for "+m+" minutes and "+s+" seconds");
+      showToast("⏱️ "+tableId+": "+pad(m)+":"+pad(s), '#00e676');
+      return;
+    }
+
+    // HOW MANY command
+    if (t.match(/how many|count|occupied|busy/)) {
+      var n=0, g=0;
+      Object.keys(state).forEach(function(id){if(state[id].started){n++;g+=state[id].guests;}});
+      speak(n===0?"All tables are open":n+" tables occupied with "+g+" guests total");
+      showToast(n===0?"All tables open":n+" tables · "+g+" guests", '#4a7fa5');
+      return;
+    }
+
+    // Unrecognized
+    speak("Sorry, I didn't understand that");
+    showToast("🤷 Didn't understand: "+transcript, '#ff9100');
+  }
+
+  btnSarah.addEventListener('click', startListening);
+  btnSarah.addEventListener('touchend', function(e){ e.preventDefault(); startListening(); });
+
+  function startListening() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      showToast("❌ Voice not supported in this browser", '#ff1744');
+      speak("Voice recognition is not supported");
+      return;
+    }
+    if (recognition) { try { recognition.stop(); } catch(e){} }
+    recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = function() {
+      btnSarah.classList.add('listening');
+      btnSarah.textContent = '🎤 LISTENING...';
+      showToast("🎤 Listening...", '#00e676');
+    };
+    recognition.onresult = function(e) {
+      var transcript = e.results[0][0].transcript;
+      showToast('"'+transcript+'"', '#4a7fa5');
+      parseCommand(transcript);
+    };
+    recognition.onerror = function(e) {
+      showToast("❌ "+e.error, '#ff1744');
+    };
+    recognition.onend = function() {
+      btnSarah.classList.remove('listening');
+      btnSarah.textContent = '🎤 SARAH';
+    };
+    recognition.start();
   }
 
 })();
