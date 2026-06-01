@@ -425,6 +425,70 @@
     window.speechSynthesis.speak(u);
   }
 
+  function parseCommand(transcript) {
+    var t = transcript.toLowerCase().trim();
+    t = t.replace(/hey\s+sarah/g,'').replace(/sarah/g,'').trim();
+
+    // Normalize number words
+    var words = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
+    Object.keys(words).forEach(function(w){
+      t = t.replace(new RegExp('\\b'+w+'\\b','g'), String(words[w]));
+    });
+
+    // Extract ANY number and ANY table letter+number anywhere in the string
+    var nums = t.match(/\b(\d{1,2})\b/g) || [];
+    var tblMatch = t.match(/\b([abcd])\s*(\d{1,2})\b/i);
+    var tableId = tblMatch ? (tblMatch[1]+tblMatch[2]).toUpperCase() : null;
+
+    // Guest count = first number that isn't the table number
+    var guestCount = null;
+    for (var i=0; i<nums.length; i++) {
+      var n = parseInt(nums[i]);
+      if (tableId && tableId.slice(1) === String(n)) continue;
+      if (n >= 1 && n <= 20) { guestCount = n; break; }
+    }
+
+    // SEAT — any of these words + number + table
+    if (/\b(seat|set|sit|said|send|seed|feet|heat|meet|beat|seat|cease|east|least)\b/.test(t) && tableId) {
+      if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ "+tableId+" not found", '#ff1744'); return true; }
+      if (state[tableId].started) { speak("Table "+tableId+" is already occupied"); showToast("⚠️ "+tableId+" occupied", '#ff9100'); return true; }
+      var g = guestCount || 1;
+      startTable(tableId, g);
+      speak("Seating "+g+(g===1?" guest":" guests")+" at table "+tableId);
+      showToast("✅ Seated "+g+" at "+tableId, '#00e676');
+      return true;
+    }
+
+    // CLEAR — any of these words + table
+    if (/\b(clear|claire|close|clean|clip|clears)\b/.test(t) && tableId) {
+      if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ "+tableId+" not found", '#ff1744'); return true; }
+      if (!state[tableId].started) { speak("Table "+tableId+" is already open"); showToast("⚠️ "+tableId+" open", '#ff9100'); return true; }
+      clearInterval(ivs[tableId]); delete ivs[tableId];
+      state[tableId].started=null; state[tableId].guests=0;
+      document.getElementById('b-'+tableId).className='tbl';
+      document.getElementById('tm-'+tableId).textContent='';
+      document.getElementById('g-'+tableId).textContent='';
+      updateSummary();
+      speak("Table "+tableId+" is now clear");
+      showToast("🗑️ "+tableId+" cleared", '#3a5a78');
+      return true;
+    }
+
+    // HOW LONG
+    if (/how\s+long/.test(t) && tableId) {
+      if (!state[tableId] || !state[tableId].started) {
+        speak("Table "+tableId+" is open"); showToast("🟦 "+tableId+" open", '#2d4a66'); return true;
+      }
+      var sec=Math.floor((Date.now()-state[tableId].started)/1000);
+      var m=Math.floor(sec/60), s=sec%60;
+      speak("Table "+tableId+" has been seated for "+m+" minutes and "+s+" seconds");
+      showToast("⏱️ "+tableId+": "+pad(m)+":"+pad(s), '#00e676');
+      return true;
+    }
+
+    return false;
+  }
+
   function activateSarah() {
     if (!SR) {
       showToast("❌ Voice not supported in Safari — try allowing mic access", '#ff1744');
