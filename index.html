@@ -492,41 +492,113 @@
     showToast("🤷 Didn't understand: "+transcript, '#ff9100');
   }
 
-  btnSarah.addEventListener('click', startListening);
-  btnSarah.addEventListener('touchend', function(e){ e.preventDefault(); startListening(); });
+  // Always-on listening — wakes on "Sarah"
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var awake = false;      // true = full command mode
+  var wakeTimer = null;   // auto-sleep after 6s if no command
 
   function startListening() {
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       showToast("❌ Voice not supported in this browser", '#ff1744');
-      speak("Voice recognition is not supported");
       return;
     }
-    if (recognition) { try { recognition.stop(); } catch(e){} }
+    if (recognition) { try { recognition.abort(); } catch(e){} }
     recognition = new SR();
     recognition.lang = 'en-US';
     recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 3;
+    recognition.continuous = false;
 
     recognition.onstart = function() {
-      btnSarah.classList.add('listening');
-      btnSarah.textContent = '🎤 LISTENING...';
-      showToast("🎤 Listening...", '#00e676');
+      if (awake) {
+        btnSarah.classList.add('listening');
+        btnSarah.textContent = '🎤 LISTENING...';
+      }
     };
+
     recognition.onresult = function(e) {
-      var transcript = e.results[0][0].transcript;
-      showToast('"'+transcript+'"', '#4a7fa5');
-      parseCommand(transcript);
+      // Check all alternatives for wake word or command
+      var transcripts = [];
+      for (var i = 0; i < e.results.length; i++) {
+        for (var j = 0; j < e.results[i].length; j++) {
+          transcripts.push(e.results[i][j].transcript.toLowerCase().trim());
+        }
+      }
+      var full = transcripts.join(' ');
+
+      if (!awake) {
+        // Waiting for wake word "Sarah"
+        if (full.indexOf('sarah') !== -1) {
+          awake = true;
+          btnSarah.classList.add('listening');
+          btnSarah.textContent = '🎤 LISTENING...';
+          speak("Yes?");
+          showToast("🎤 Sarah is listening...", '#00e676');
+          // Auto-sleep if no command follows
+          clearTimeout(wakeTimer);
+          wakeTimer = setTimeout(function() {
+            awake = false;
+            btnSarah.classList.remove('listening');
+            btnSarah.textContent = '🎤 SARAH';
+          }, 6000);
+        }
+      } else {
+        // Awake — process command
+        clearTimeout(wakeTimer);
+        awake = false;
+        btnSarah.classList.remove('listening');
+        btnSarah.textContent = '🎤 SARAH';
+        var transcript = e.results[0][0].transcript;
+        showToast('"' + transcript + '"', '#4a7fa5');
+        // Prepend "sarah" so parseCommand recognises it
+        parseCommand('sarah ' + transcript);
+      }
     };
+
     recognition.onerror = function(e) {
-      showToast("❌ "+e.error, '#ff1744');
+      if (e.error === 'no-speech' || e.error === 'aborted') return; // silent retry
+      showToast("❌ " + e.error, '#ff1744');
     };
+
     recognition.onend = function() {
-      btnSarah.classList.remove('listening');
-      btnSarah.textContent = '🎤 SARAH';
+      // Always restart to keep listening
+      setTimeout(function() { startListening(); }, 300);
     };
+
     recognition.start();
   }
+
+  // Tap button to manually trigger awake mode
+  btnSarah.addEventListener('click', function() {
+    awake = true;
+    speak("Yes?");
+    showToast("🎤 Sarah is listening...", '#00e676');
+    btnSarah.classList.add('listening');
+    btnSarah.textContent = '🎤 LISTENING...';
+    clearTimeout(wakeTimer);
+    wakeTimer = setTimeout(function() {
+      awake = false;
+      btnSarah.classList.remove('listening');
+      btnSarah.textContent = '🎤 SARAH';
+    }, 6000);
+  });
+  btnSarah.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    awake = true;
+    speak("Yes?");
+    showToast("🎤 Sarah is listening...", '#00e676');
+    btnSarah.classList.add('listening');
+    btnSarah.textContent = '🎤 LISTENING...';
+    clearTimeout(wakeTimer);
+    wakeTimer = setTimeout(function() {
+      awake = false;
+      btnSarah.classList.remove('listening');
+      btnSarah.textContent = '🎤 SARAH';
+    }, 6000);
+  });
+
+  // Start always-on listening on page load
+  startListening();
 
 })();
 </script>
