@@ -60,7 +60,9 @@
   .tbl.warn { background:#fbe4e4; border-color:#d32323; color:#d32323; }
   .tbl.hot  { background:#d32323; border-color:#d32323; color:#ffffff; }
   .tbl-name   { font-size:.72rem; font-weight:bold; pointer-events:none; line-height:1.1; }
-  .tbl-guests { font-size:.62rem; pointer-events:none; opacity:.85; line-height:1.1; min-height:10px; }
+  .tbl-guests { font-size:.62rem; pointer-events:none; opacity:.85; line-height:1.1; min-height:10px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:96%; }
+  .tbl.drop-ok { box-shadow:0 0 0 3px #d32323 inset; }
   .tbl-time   { font-family:monospace; font-size:.62rem; pointer-events:none; min-height:11px; line-height:1.1; }
   .rzh {
     position:absolute; bottom:1px; right:3px;
@@ -175,6 +177,13 @@
     color:#6b6b6b; text-align:center; line-height:1.5;
   }
   #wl-kiosk-link a { color:#d32323; }
+  .wl-card.dragging { opacity:.3; }
+  #drag-ghost {
+    position:fixed; z-index:2000; pointer-events:none;
+    background:#1a1a1a; color:#ffffff; font-family:monospace; font-size:.72rem;
+    padding:9px 14px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.35);
+    transform:translate(-50%,-50%); white-space:nowrap; display:none;
+  }
   #guest-modal {
     position:fixed; inset:0; z-index:99999;
     background:rgba(0,0,0,.6);
@@ -250,36 +259,36 @@
   <div class="tbl" id="b-D3"  style="left:163px;top:0px;width:48px;height:62px;"><span class="tbl-name">D3</span><span class="tbl-guests" id="g-D3"></span><span class="tbl-time" id="tm-D3"></span><span class="rzh">⤡</span></div>
   <div class="tbl" id="b-D2"  style="left:79px;top:0px;width:48px;height:62px;"><span class="tbl-name">D2</span><span class="tbl-guests" id="g-D2"></span><span class="tbl-time" id="tm-D2"></span><span class="rzh">⤡</span></div>
   <div class="tbl" id="b-D1"  style="left:21px;top:0px;width:48px;height:62px;"><span class="tbl-name">D1</span><span class="tbl-guests" id="g-D1"></span><span class="tbl-time" id="tm-D1"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C11" style="left:419px;top:120px;width:48px;height:62px;"><span class="tbl-name">C11</span><span class="tbl-guests" id="g-C11"></span><span class="tbl-time" id="tm-C11"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C6"  style="left:419px;top:208px;width:48px;height:62px;"><span class="tbl-name">C6</span><span class="tbl-guests" id="g-C6"></span><span class="tbl-time" id="tm-C6"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C1"  style="left:419px;top:289px;width:48px;height:62px;"><span class="tbl-name">C1</span><span class="tbl-guests" id="g-C1"></span><span class="tbl-time" id="tm-C1"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C12" style="left:343px;top:208px;width:65px;height:61px;"><span class="tbl-name">C12</span><span class="tbl-guests" id="g-C12"></span><span class="tbl-time" id="tm-C12"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C7"  style="left:343px;top:122px;width:65px;height:64px;"><span class="tbl-name">C7</span><span class="tbl-guests" id="g-C7"></span><span class="tbl-time" id="tm-C7"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C2"  style="left:343px;top:290px;width:65px;height:61px;"><span class="tbl-name">C2</span><span class="tbl-guests" id="g-C2"></span><span class="tbl-time" id="tm-C2"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C13" style="left:279px;top:121px;width:48px;height:62px;"><span class="tbl-name">C13</span><span class="tbl-guests" id="g-C13"></span><span class="tbl-time" id="tm-C13"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C8"  style="left:278px;top:194px;width:48px;height:62px;"><span class="tbl-name">C8</span><span class="tbl-guests" id="g-C8"></span><span class="tbl-time" id="tm-C8"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C3"  style="left:277px;top:269px;width:48px;height:62px;"><span class="tbl-name">C3</span><span class="tbl-guests" id="g-C3"></span><span class="tbl-time" id="tm-C3"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C14" style="left:221px;top:120px;width:48px;height:62px;"><span class="tbl-name">C14</span><span class="tbl-guests" id="g-C14"></span><span class="tbl-time" id="tm-C14"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C9"  style="left:219px;top:195px;width:48px;height:62px;"><span class="tbl-name">C9</span><span class="tbl-guests" id="g-C9"></span><span class="tbl-time" id="tm-C9"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C4"  style="left:219px;top:268px;width:48px;height:62px;"><span class="tbl-name">C4</span><span class="tbl-guests" id="g-C4"></span><span class="tbl-time" id="tm-C4"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C15" style="left:165px;top:120px;width:48px;height:62px;"><span class="tbl-name">C15</span><span class="tbl-guests" id="g-C15"></span><span class="tbl-time" id="tm-C15"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C10" style="left:162px;top:194px;width:48px;height:62px;"><span class="tbl-name">C10</span><span class="tbl-guests" id="g-C10"></span><span class="tbl-time" id="tm-C10"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-C5"  style="left:160px;top:268px;width:48px;height:62px;"><span class="tbl-name">C5</span><span class="tbl-guests" id="g-C5"></span><span class="tbl-time" id="tm-C5"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A13" style="left:277px;top:344px;width:48px;height:62px;"><span class="tbl-name">A13</span><span class="tbl-guests" id="g-A13"></span><span class="tbl-time" id="tm-A13"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A14" style="left:218px;top:345px;width:48px;height:62px;"><span class="tbl-name">A14</span><span class="tbl-guests" id="g-A14"></span><span class="tbl-time" id="tm-A14"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A15" style="left:160px;top:343px;width:48px;height:62px;"><span class="tbl-name">A15</span><span class="tbl-guests" id="g-A15"></span><span class="tbl-time" id="tm-A15"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A9"  style="left:414px;top:451px;width:48px;height:62px;"><span class="tbl-name">A9</span><span class="tbl-guests" id="g-A9"></span><span class="tbl-time" id="tm-A9"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A10" style="left:356px;top:451px;width:48px;height:62px;"><span class="tbl-name">A10</span><span class="tbl-guests" id="g-A10"></span><span class="tbl-time" id="tm-A10"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A5"  style="left:415px;top:531px;width:48px;height:62px;"><span class="tbl-name">A5</span><span class="tbl-guests" id="g-A5"></span><span class="tbl-time" id="tm-A5"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A6"  style="left:355px;top:531px;width:48px;height:62px;"><span class="tbl-name">A6</span><span class="tbl-guests" id="g-A6"></span><span class="tbl-time" id="tm-A6"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A1"  style="left:414px;top:613px;width:48px;height:62px;"><span class="tbl-name">A1</span><span class="tbl-guests" id="g-A1"></span><span class="tbl-time" id="tm-A1"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A2"  style="left:354px;top:612px;width:48px;height:62px;"><span class="tbl-name">A2</span><span class="tbl-guests" id="g-A2"></span><span class="tbl-time" id="tm-A2"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A11" style="left:278px;top:454px;width:48px;height:62px;"><span class="tbl-name">A11</span><span class="tbl-guests" id="g-A11"></span><span class="tbl-time" id="tm-A11"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A12" style="left:220px;top:454px;width:48px;height:62px;"><span class="tbl-name">A12</span><span class="tbl-guests" id="g-A12"></span><span class="tbl-time" id="tm-A12"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A7"  style="left:280px;top:531px;width:48px;height:62px;"><span class="tbl-name">A7</span><span class="tbl-guests" id="g-A7"></span><span class="tbl-time" id="tm-A7"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A8"  style="left:219px;top:532px;width:48px;height:62px;"><span class="tbl-name">A8</span><span class="tbl-guests" id="g-A8"></span><span class="tbl-time" id="tm-A8"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A3"  style="left:278px;top:612px;width:48px;height:62px;"><span class="tbl-name">A3</span><span class="tbl-guests" id="g-A3"></span><span class="tbl-time" id="tm-A3"></span><span class="rzh">⤡</span></div>
-  <div class="tbl" id="b-A4"  style="left:218px;top:612px;width:48px;height:62px;"><span class="tbl-name">A4</span><span class="tbl-guests" id="g-A4"></span><span class="tbl-time" id="tm-A4"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-61" style="left:419px;top:120px;width:48px;height:62px;"><span class="tbl-name">61</span><span class="tbl-guests" id="g-61"></span><span class="tbl-time" id="tm-61"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-51"  style="left:419px;top:208px;width:48px;height:62px;"><span class="tbl-name">51</span><span class="tbl-guests" id="g-51"></span><span class="tbl-time" id="tm-51"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-41"  style="left:419px;top:289px;width:48px;height:62px;"><span class="tbl-name">41</span><span class="tbl-guests" id="g-41"></span><span class="tbl-time" id="tm-41"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-52" style="left:343px;top:208px;width:65px;height:61px;"><span class="tbl-name">52</span><span class="tbl-guests" id="g-52"></span><span class="tbl-time" id="tm-52"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-62"  style="left:343px;top:122px;width:65px;height:64px;"><span class="tbl-name">62</span><span class="tbl-guests" id="g-62"></span><span class="tbl-time" id="tm-62"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-42"  style="left:343px;top:290px;width:65px;height:61px;"><span class="tbl-name">42</span><span class="tbl-guests" id="g-42"></span><span class="tbl-time" id="tm-42"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-63" style="left:279px;top:121px;width:48px;height:62px;"><span class="tbl-name">63</span><span class="tbl-guests" id="g-63"></span><span class="tbl-time" id="tm-63"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-53"  style="left:278px;top:194px;width:48px;height:62px;"><span class="tbl-name">53</span><span class="tbl-guests" id="g-53"></span><span class="tbl-time" id="tm-53"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-43"  style="left:277px;top:269px;width:48px;height:62px;"><span class="tbl-name">43</span><span class="tbl-guests" id="g-43"></span><span class="tbl-time" id="tm-43"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-64" style="left:221px;top:120px;width:48px;height:62px;"><span class="tbl-name">64</span><span class="tbl-guests" id="g-64"></span><span class="tbl-time" id="tm-64"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-54"  style="left:219px;top:195px;width:48px;height:62px;"><span class="tbl-name">54</span><span class="tbl-guests" id="g-54"></span><span class="tbl-time" id="tm-54"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-44"  style="left:219px;top:268px;width:48px;height:62px;"><span class="tbl-name">44</span><span class="tbl-guests" id="g-44"></span><span class="tbl-time" id="tm-44"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-65" style="left:165px;top:120px;width:48px;height:62px;"><span class="tbl-name">65</span><span class="tbl-guests" id="g-65"></span><span class="tbl-time" id="tm-65"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-55" style="left:162px;top:194px;width:48px;height:62px;"><span class="tbl-name">55</span><span class="tbl-guests" id="g-55"></span><span class="tbl-time" id="tm-55"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-45"  style="left:160px;top:268px;width:48px;height:62px;"><span class="tbl-name">45</span><span class="tbl-guests" id="g-45"></span><span class="tbl-time" id="tm-45"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-35" style="left:277px;top:344px;width:48px;height:62px;"><span class="tbl-name">35</span><span class="tbl-guests" id="g-35"></span><span class="tbl-time" id="tm-35"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-36" style="left:218px;top:345px;width:48px;height:62px;"><span class="tbl-name">36</span><span class="tbl-guests" id="g-36"></span><span class="tbl-time" id="tm-36"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-37" style="left:160px;top:343px;width:48px;height:62px;"><span class="tbl-name">37</span><span class="tbl-guests" id="g-37"></span><span class="tbl-time" id="tm-37"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-31"  style="left:414px;top:451px;width:48px;height:62px;"><span class="tbl-name">31</span><span class="tbl-guests" id="g-31"></span><span class="tbl-time" id="tm-31"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-32" style="left:356px;top:451px;width:48px;height:62px;"><span class="tbl-name">32</span><span class="tbl-guests" id="g-32"></span><span class="tbl-time" id="tm-32"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-21"  style="left:415px;top:531px;width:48px;height:62px;"><span class="tbl-name">21</span><span class="tbl-guests" id="g-21"></span><span class="tbl-time" id="tm-21"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-22"  style="left:355px;top:531px;width:48px;height:62px;"><span class="tbl-name">22</span><span class="tbl-guests" id="g-22"></span><span class="tbl-time" id="tm-22"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-11"  style="left:414px;top:613px;width:48px;height:62px;"><span class="tbl-name">11</span><span class="tbl-guests" id="g-11"></span><span class="tbl-time" id="tm-11"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-12"  style="left:354px;top:612px;width:48px;height:62px;"><span class="tbl-name">12</span><span class="tbl-guests" id="g-12"></span><span class="tbl-time" id="tm-12"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-33" style="left:278px;top:454px;width:48px;height:62px;"><span class="tbl-name">33</span><span class="tbl-guests" id="g-33"></span><span class="tbl-time" id="tm-33"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-34" style="left:220px;top:454px;width:48px;height:62px;"><span class="tbl-name">34</span><span class="tbl-guests" id="g-34"></span><span class="tbl-time" id="tm-34"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-23"  style="left:280px;top:531px;width:48px;height:62px;"><span class="tbl-name">23</span><span class="tbl-guests" id="g-23"></span><span class="tbl-time" id="tm-23"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-24"  style="left:219px;top:532px;width:48px;height:62px;"><span class="tbl-name">24</span><span class="tbl-guests" id="g-24"></span><span class="tbl-time" id="tm-24"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-13"  style="left:278px;top:612px;width:48px;height:62px;"><span class="tbl-name">13</span><span class="tbl-guests" id="g-13"></span><span class="tbl-time" id="tm-13"></span><span class="rzh">⤡</span></div>
+  <div class="tbl" id="b-14"  style="left:218px;top:612px;width:48px;height:62px;"><span class="tbl-name">14</span><span class="tbl-guests" id="g-14"></span><span class="tbl-time" id="tm-14"></span><span class="rzh">⤡</span></div>
   <div class="tbl" id="b-B1"  style="left:59px;top:344px;width:48px;height:62px;"><span class="tbl-name">B1</span><span class="tbl-guests" id="g-B1"></span><span class="tbl-time" id="tm-B1"></span><span class="rzh">⤡</span></div>
   <div class="tbl" id="b-B2"  style="left:0px;top:343px;width:48px;height:62px;"><span class="tbl-name">B2</span><span class="tbl-guests" id="g-B2"></span><span class="tbl-time" id="tm-B2"></span><span class="rzh">⤡</span></div>
   <div class="tbl" id="b-B3"  style="left:58px;top:270px;width:48px;height:62px;"><span class="tbl-name">B3</span><span class="tbl-guests" id="g-B3"></span><span class="tbl-time" id="tm-B3"></span><span class="rzh">⤡</span></div>
@@ -320,8 +329,10 @@
     <button id="wl-close">✕</button>
   </div>
   <div id="wl-list"><div id="wl-empty">No one waiting</div></div>
-  <div id="wl-kiosk-link">Guests sign in at the kiosk screen (waitlist.html) — this panel updates automatically.</div>
+  <div id="wl-kiosk-link">Drag a party onto an open table to seat them instantly.</div>
 </div>
+
+<div id="drag-ghost"></div>
 
 <div id="sarah-toast"></div>
 
@@ -401,7 +412,83 @@
           '<button class="wl-btn wl-remove" data-id="'+id+'" data-act="remove">✕ REMOVE</button>'+
         '</div>';
       wlListEl.appendChild(card);
+      attachCardDrag(card, id, e);
     });
+  }
+
+  // ── Drag a waitlist card onto a table to seat them instantly ──
+  var dragGhost = document.getElementById('drag-ghost');
+
+  function attachCardDrag(card, wlId, entry) {
+    var dragging=false, moved=false, t0x, t0y, hoverTbl=null;
+    var TAP = 10;
+
+    function begin(x, y, targetEl) {
+      if (targetEl.closest && targetEl.closest('.wl-btn')) return false;
+      dragging = true; moved = false; t0x = x; t0y = y;
+      return true;
+    }
+
+    function move(x, y) {
+      var dx=x-t0x, dy=y-t0y;
+      if (!moved && (Math.abs(dx)>TAP || Math.abs(dy)>TAP)) {
+        moved = true;
+        dragGhost.textContent = '👤 '+entry.party+' · '+entry.name;
+        dragGhost.style.display = 'block';
+        card.classList.add('dragging');
+        closeWaitlist();
+      }
+      if (!moved) return;
+      dragGhost.style.left = x+'px';
+      dragGhost.style.top  = y+'px';
+      var el = document.elementFromPoint(x, y);
+      var tblEl = el && el.closest ? el.closest('.tbl') : null;
+      if (hoverTbl && hoverTbl!==tblEl) { hoverTbl.classList.remove('drop-ok'); hoverTbl=null; }
+      if (tblEl) {
+        var tid = tblEl.id.replace('b-','');
+        if (state[tid] && !state[tid].started) { tblEl.classList.add('drop-ok'); hoverTbl=tblEl; }
+      }
+    }
+
+    function end() {
+      if (moved) {
+        dragGhost.style.display = 'none';
+        card.classList.remove('dragging');
+        if (hoverTbl) {
+          hoverTbl.classList.remove('drop-ok');
+          var tid = hoverTbl.id.replace('b-','');
+          seatFromWaitlist(wlId, entry, tid);
+        } else {
+          openWaitlist();
+        }
+      }
+      dragging=false; moved=false; hoverTbl=null;
+    }
+
+    card.addEventListener('touchstart', function(e){
+      begin(e.changedTouches[0].clientX, e.changedTouches[0].clientY, e.target);
+    }, {passive:true});
+    card.addEventListener('touchmove', function(e){
+      if (!dragging) return;
+      move(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    }, {passive:true});
+    card.addEventListener('touchend', function(){
+      if (!dragging) return;
+      end();
+    }, {passive:true});
+
+    card.addEventListener('mousedown', function(e){
+      if (!begin(e.clientX, e.clientY, e.target)) return;
+      function mv(e){ move(e.clientX, e.clientY); }
+      function mu(){ end(); document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',mu); }
+      document.addEventListener('mousemove', mv);
+      document.addEventListener('mouseup', mu);
+    });
+  }
+
+  function seatFromWaitlist(wlId, entry, tableId) {
+    startTable(tableId, entry.party, entry.name);
+    wlRef.child(wlId).update({ status:'seated', seatedAt: firebase.database.ServerValue.TIMESTAMP });
   }
 
   function escapeHtml(s) {
@@ -547,7 +634,7 @@
     var s=state[id], el=document.getElementById('b-'+id);
     if (s.started) {
       clearInterval(ivs[id]); delete ivs[id];
-      s.started=null; s.guests=0;
+      s.started=null; s.guests=0; s.name=null;
       el.className='tbl';
       document.getElementById('tm-'+id).textContent='';
       document.getElementById('g-'+id).textContent='';
@@ -557,15 +644,15 @@
     }
   }
 
-  function startTable(id, guests) {
+  function startTable(id, guests, name) {
     var s=state[id];
     if (!s) return;
-    s.started=Date.now(); s.guests=guests;
+    s.started=Date.now(); s.guests=guests; s.name=name||null;
     // Force visual update immediately
     var el=document.getElementById('b-'+id);
     if (el) el.className='tbl on';
     var gEl=document.getElementById('g-'+id);
-    if (gEl) gEl.textContent='👤'+guests;
+    if (gEl) gEl.textContent=(name?name+' · ':'')+'👤'+guests;
     if (ivs[id]) { clearInterval(ivs[id]); delete ivs[id]; }
     ivs[id]=setInterval(function(){tick(id);},1000);
     tick(id);
@@ -650,7 +737,7 @@
       if (!state[tableId]) { speak("I don't see table "+tableId); showToast("❓ "+tableId+" not found", '#d32323'); return true; }
       if (!state[tableId].started) { speak("Table "+tableId+" is already open"); showToast("⚠️ "+tableId+" open", '#d32323'); return true; }
       clearInterval(ivs[tableId]); delete ivs[tableId];
-      state[tableId].started=null; state[tableId].guests=0;
+      state[tableId].started=null; state[tableId].guests=0; state[tableId].name=null;
       document.getElementById('b-'+tableId).className='tbl';
       document.getElementById('tm-'+tableId).textContent='';
       document.getElementById('g-'+tableId).textContent='';
