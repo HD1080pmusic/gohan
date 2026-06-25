@@ -149,6 +149,13 @@
     border-radius:6px; cursor:pointer; touch-action:manipulation;
   }
   #wl-list { flex:1; overflow-y:auto; padding:10px; -webkit-overflow-scrolling:touch; }
+  #wl-tabs { display:flex; gap:6px; padding:0 10px 10px; flex-shrink:0; }
+  .wl-tab {
+    flex:1; font-family:monospace; font-size:.64rem; letter-spacing:.05em; padding:7px 0;
+    border-radius:6px; border:1.5px solid #e0e0e0; background:#ffffff; color:#6b6b6b;
+    cursor:pointer; touch-action:manipulation;
+  }
+  .wl-tab.active { border-color:#1a1a1a; color:#1a1a1a; background:#f7f7f7; }
   #wl-empty {
     text-align:center; color:#6b6b6b; font-family:monospace; font-size:.7rem;
     margin-top:30px; line-height:1.6;
@@ -172,6 +179,14 @@
   }
   .wl-seat   { background:#ffffff; border-color:#1a1a1a; color:#1a1a1a; }
   .wl-remove { background:#ffffff; border-color:#d32323; color:#d32323; }
+  .wl-restore { background:#ffffff; border-color:#1a1a1a; color:#1a1a1a; }
+  .wl-delete-perm { background:#ffffff; border-color:#d32323; color:#d32323; }
+  .wl-status-badge {
+    font-size:.6rem; font-family:monospace; letter-spacing:.04em; padding:2px 7px;
+    border-radius:10px; flex-shrink:0;
+  }
+  .wl-status-badge.seated  { background:#1a1a1a; color:#ffffff; }
+  .wl-status-badge.removed { background:#d32323; color:#ffffff; }
   #wl-kiosk-link {
     margin:0 10px 10px; padding:8px; font-family:monospace; font-size:.62rem;
     color:#6b6b6b; text-align:center; line-height:1.5;
@@ -328,6 +343,10 @@
     <h2>🪑 WAITLIST</h2>
     <button id="wl-close">✕</button>
   </div>
+  <div id="wl-tabs">
+    <button class="wl-tab active" data-mode="waiting">WAITING</button>
+    <button class="wl-tab" data-mode="history">HISTORY</button>
+  </div>
   <div id="wl-list"><div id="wl-empty">No one waiting</div></div>
   <div id="wl-kiosk-link">Drag a party onto an open table to seat them instantly.</div>
 </div>
@@ -367,10 +386,22 @@
   var wlClose     = document.getElementById('wl-close');
   var wlListEl    = document.getElementById('wl-list');
   var wlEmptyEl   = document.getElementById('wl-empty');
+  var wlTabs      = document.querySelectorAll('.wl-tab');
   var wlData      = {}; // id -> entry
   var wlTickIv    = null;
+  var wlViewMode  = 'waiting';
 
-  function openWaitlist()  { wlOverlay.classList.add('show'); wlDrawer.classList.add('show'); }
+  wlTabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      wlViewMode = tab.getAttribute('data-mode');
+      wlTabs.forEach(function(t){ t.classList.toggle('active', t===tab); });
+      renderWaitlist();
+    });
+  });
+
+  function openWaitlist() {
+    wlOverlay.classList.add('show'); wlDrawer.classList.add('show');
+  }
   function closeWaitlist() { wlOverlay.classList.remove('show'); wlDrawer.classList.remove('show'); }
   btnWaitlist.addEventListener('click', openWaitlist);
   wlClose.addEventListener('click', closeWaitlist);
@@ -383,19 +414,35 @@
   }
 
   function renderWaitlist() {
-    var ids = Object.keys(wlData).filter(function(id){ return wlData[id].status==='waiting'; });
-    ids.sort(function(a,b){ return (wlData[a].joinedAt||0)-(wlData[b].joinedAt||0); });
+    var waitingIds = Object.keys(wlData).filter(function(id){ return wlData[id].status==='waiting'; });
+    waitingIds.sort(function(a,b){ return (wlData[a].joinedAt||0)-(wlData[b].joinedAt||0); });
 
-    var n = ids.length;
+    var n = waitingIds.length;
     if (n>0) { wlBadge.textContent=n; wlBadge.classList.add('show'); btnWaitlist.classList.add('has-waiting'); }
     else      { wlBadge.classList.remove('show'); btnWaitlist.classList.remove('has-waiting'); }
 
-    if (n===0) {
+    var historyIds = Object.keys(wlData).filter(function(id){
+      return wlData[id].status==='seated' || wlData[id].status==='removed';
+    });
+    wlTabs.forEach(function(t){
+      t.textContent = (t.getAttribute('data-mode')==='waiting' ? 'WAITING' : 'HISTORY') +
+        ' ('+(t.getAttribute('data-mode')==='waiting' ? waitingIds.length : historyIds.length)+')';
+    });
+
+    if (wlViewMode === 'history') {
+      renderHistory(historyIds);
+    } else {
+      renderWaiting(waitingIds);
+    }
+  }
+
+  function renderWaiting(ids) {
+    if (ids.length===0) {
       wlListEl.innerHTML='';
+      wlEmptyEl.textContent = 'No one waiting';
       wlListEl.appendChild(wlEmptyEl);
       return;
     }
-
     wlListEl.innerHTML='';
     ids.forEach(function(id, idx) {
       var e = wlData[id];
@@ -413,6 +460,38 @@
         '</div>';
       wlListEl.appendChild(card);
       attachCardDrag(card, id, e);
+    });
+  }
+
+  function renderHistory(ids) {
+    if (ids.length===0) {
+      wlListEl.innerHTML='';
+      wlEmptyEl.textContent = 'No history yet';
+      wlListEl.appendChild(wlEmptyEl);
+      return;
+    }
+    ids.sort(function(a,b){
+      var ta = wlData[a].removedAt || wlData[a].seatedAt || wlData[a].joinedAt || 0;
+      var tb = wlData[b].removedAt || wlData[b].seatedAt || wlData[b].joinedAt || 0;
+      return tb - ta; // most recent action first
+    });
+    wlListEl.innerHTML='';
+    ids.forEach(function(id) {
+      var e = wlData[id];
+      var isRemoved = e.status==='removed';
+      var actionAt = e.removedAt || e.seatedAt || e.joinedAt || Date.now();
+      var ago = Math.max(0, Math.floor((Date.now()-actionAt)/60000));
+      var card = document.createElement('div');
+      card.className = 'wl-card';
+      card.innerHTML =
+        '<div class="wl-top"><span class="wl-name">'+escapeHtml(e.name)+'</span>'+
+        '<span class="wl-status-badge '+(isRemoved?'removed':'seated')+'">'+(isRemoved?'REMOVED':'SEATED')+'</span></div>'+
+        '<div class="wl-meta">👤 '+e.party+(e.phone?' · 📱 '+escapeHtml(e.phone):'')+' · '+ago+'m ago</div>'+
+        '<div class="wl-actions">'+
+          '<button class="wl-btn wl-restore" data-id="'+id+'" data-act="restore">↩ RESTORE</button>'+
+          '<button class="wl-btn wl-delete-perm" data-id="'+id+'" data-act="delete-permanent">🗑 DELETE</button>'+
+        '</div>';
+      wlListEl.appendChild(card);
     });
   }
 
@@ -502,9 +581,13 @@
     if (!btn) return;
     var id = btn.getAttribute('data-id'), act = btn.getAttribute('data-act');
     if (act==='remove') {
-      wlRef.child(id).remove();
+      wlRef.child(id).update({ status:'removed', removedAt: firebase.database.ServerValue.TIMESTAMP });
     } else if (act==='seat') {
       wlRef.child(id).update({ status:'seated', seatedAt: firebase.database.ServerValue.TIMESTAMP });
+    } else if (act==='restore') {
+      wlRef.child(id).update({ status:'waiting', removedAt:null, seatedAt:null });
+    } else if (act==='delete-permanent') {
+      wlRef.child(id).remove();
     }
   });
 
