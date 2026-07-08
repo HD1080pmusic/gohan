@@ -291,6 +291,135 @@
   }
   .wl-edit-action.save   { background:#1a1a1a; border-color:#1a1a1a; color:#ffffff; }
   .wl-edit-action.cancel { background:none; border-color:#1a1a1a; color:#1a1a1a; }
+
+  /* ── Reservations toolbar button ── */
+  #btn-resv {
+    font-family:monospace; font-size:.68rem; padding:5px 12px;
+    border-radius:6px; cursor:pointer; border:1.5px solid #1a1a1a;
+    background:#ffffff; color:#1a1a1a; flex-shrink:0;
+    position:relative; transition:all .2s;
+  }
+  #btn-resv.has-soon { border-color:#c9a227; color:#c9a227; background:#f8f0d8; }
+  #resv-badge {
+    position:absolute; top:-7px; right:-7px;
+    background:#c9a227; color:#1a1a1a; font-size:.6rem; font-weight:bold;
+    border-radius:10px; min-width:16px; height:16px; padding:0 3px;
+    display:none; align-items:center; justify-content:center;
+    font-family:monospace; line-height:1;
+  }
+  #resv-badge.show { display:flex; }
+  #resv-overlay {
+    position:fixed; inset:0; z-index:1600;
+    background:rgba(0,0,0,.4);
+    opacity:0; pointer-events:none; transition:opacity .2s;
+  }
+  #resv-overlay.show { opacity:1; pointer-events:all; }
+  #resv-drawer {
+    position:fixed; top:0; left:0; bottom:0; width:320px; max-width:90vw;
+    background:#fdfcfa; border-right:1.5px solid #c9a227;
+    z-index:1601; transform:translateX(-100%); transition:transform .25s ease;
+    display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top);
+  }
+  #resv-drawer.show { transform:translateX(0); }
+  #resv-head {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; border-bottom:1.5px solid #c9a227; flex-shrink:0;
+  }
+  #resv-head h2 { font-size:.78rem; color:#1a1a1a; font-family:monospace; letter-spacing:.08em; }
+  #resv-close {
+    background:none; border:1px solid #1a1a1a; color:#1a1a1a;
+    font-family:monospace; font-size:.85rem; width:28px; height:28px;
+    border-radius:6px; cursor:pointer; touch-action:manipulation;
+  }
+  #resv-add-btn {
+    margin:10px; padding:10px; font-family:monospace; font-size:.7rem;
+    border-radius:8px; border:1.5px solid #c9a227; color:#1a1a1a;
+    background:#f8f0d8; cursor:pointer; text-align:center; flex-shrink:0;
+    touch-action:manipulation; font-weight:bold;
+  }
+  #resv-list { flex:1; overflow-y:auto; padding:10px; -webkit-overflow-scrolling:touch; }
+  #resv-empty {
+    text-align:center; color:#7a6f5d; font-family:monospace; font-size:.7rem;
+    margin-top:30px; line-height:1.6;
+  }
+  .resv-card {
+    background:#fffdf7; border:1.5px solid #e6e1d2; border-radius:10px;
+    padding:10px 12px; margin-bottom:10px;
+  }
+  .resv-card.resv-soon { border-color:#c9a227; background:#f8f0d8; }
+  .resv-card.resv-now  { border-color:#d32323; background:#fbe4e4;
+    animation: resv-pulse 1.6s ease-in-out infinite; }
+  @keyframes resv-pulse {
+    0%,100% { box-shadow:0 0 0 0 rgba(211,35,35,.35); }
+    50%     { box-shadow:0 0 8px 3px rgba(211,35,35,.45); }
+  }
+  .resv-top  { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px; }
+  .resv-name { font-size:.85rem; font-weight:bold; color:#1a1a1a; font-family:monospace; }
+  .resv-when { font-size:.66rem; color:#7a6f5d; font-family:monospace; }
+  .resv-card.resv-soon .resv-when { color:#c9a227; font-weight:bold; }
+  .resv-card.resv-now  .resv-when { color:#d32323; font-weight:bold; }
+  .resv-meta  { font-size:.68rem; color:#1a1a1a; font-family:monospace; margin-bottom:4px; }
+  .resv-notes { font-size:.64rem; color:#7a6f5d; font-family:monospace; margin-bottom:8px; font-style:italic; }
+  .resv-actions { display:flex; gap:8px; }
+  .resv-btn {
+    flex:1; font-family:monospace; font-size:.65rem; padding:7px 0;
+    border-radius:6px; cursor:pointer; touch-action:manipulation; border:1.5px solid;
+  }
+  .resv-seat-btn   { background:#f8f0d8; border-color:#c9a227; color:#1a1a1a; }
+  .resv-delete-btn { background:#ffffff; border-color:#d32323; color:#d32323; }
+  #resv-modal {
+    position:fixed; inset:0; z-index:99999;
+    background:rgba(0,0,0,.6);
+    display:flex; align-items:center; justify-content:center;
+    touch-action:none; opacity:0; pointer-events:none; transition:opacity .15s;
+  }
+  #resv-modal.show { opacity:1; pointer-events:all; }
+  #resv-box {
+    background:#fffdf7; border:1.5px solid #c9a227;
+    border-radius:12px; padding:20px 22px;
+    width:min(360px,92vw); max-height:90vh; overflow-y:auto;
+    text-align:left; box-shadow:0 8px 24px rgba(0,0,0,.18);
+  }
+  #resv-box h3 { font-size:.85rem; color:#1a1a1a; margin-bottom:14px; font-family:monospace; letter-spacing:.08em; text-align:center; }
+  .resv-field { margin-bottom:10px; }
+  .resv-field label { display:block; font-size:.65rem; color:#7a6f5d; font-family:monospace; letter-spacing:.04em; margin-bottom:4px; }
+  .resv-input {
+    width:100%; font-size:.9rem; padding:9px 10px; border-radius:8px;
+    border:1.5px solid #c9a227; background:#ffffff; color:#1a1a1a;
+    font-family:Arial,sans-serif; box-sizing:border-box;
+  }
+  .resv-input:focus { outline:none; border-color:#d32323; }
+  .resv-row { display:flex; gap:8px; }
+  .resv-row .resv-field { flex:1; min-width:0; }
+  .resv-modal-actions { display:flex; gap:8px; justify-content:center; margin-top:14px; }
+  .resv-modal-btn {
+    font-family:monospace; font-size:.7rem; padding:9px 20px;
+    border-radius:6px; cursor:pointer; touch-action:manipulation; border:1.5px solid;
+  }
+  .resv-modal-btn.save   { background:#1a1a1a; border-color:#1a1a1a; color:#ffffff; }
+  .resv-modal-btn.cancel { background:none; border-color:#1a1a1a; color:#1a1a1a; }
+
+  /* ── iPhone responsive overrides ── */
+  @media (max-width:430px) {
+    #toolbar { height:auto; min-height:44px; gap:5px; padding:6px 8px;
+      padding-top:max(6px,env(safe-area-inset-top)); flex-wrap:nowrap; }
+    #toolbar > div:first-child img { height:20px !important; }
+    #toolbar-title { display:none; }
+    .legend { display:none; }
+    #btn-sarah, #btn-waitlist, #btn-resv, #btn-mode {
+      font-size:.6rem; padding:5px 7px; }
+    #canvas { top:44px; bottom:20px; }
+    body.editing #canvas { top:62px; }
+    #edit-banner { top:44px; font-size:.56rem; }
+    #summary { font-size:.58rem; height:20px; }
+    #wl-drawer { width:100vw; max-width:100vw; }
+    #resv-drawer { width:100vw; max-width:100vw; }
+    #wl-edit-box, #guest-box, #resv-box { width:96vw; padding:14px 12px; }
+    .guest-btns .g-btn { width:38px; height:34px; font-size:.78rem; }
+    #clear-toast { font-size:.64rem; padding:7px 8px 7px 12px; bottom:28px; }
+    #resv-box { width:96vw; }
+  }
 </style>
 </head>
 <body class="locked">
@@ -305,6 +434,7 @@
   </div>
   <button id="btn-sarah">🎤 SARAH</button>
   <button id="btn-waitlist">🪑 WAITLIST<span id="wl-badge"></span></button>
+  <button id="btn-resv">📅 RESV<span id="resv-badge"></span></button>
   <button id="btn-mode" class="locked">🔒 LOCKED</button>
 </div>
 
@@ -399,6 +529,56 @@
   </div>
 </div>
 
+<!-- ── Reservations drawer (slides from left) ── -->
+<div id="resv-overlay"></div>
+<div id="resv-drawer">
+  <div id="resv-head">
+    <h2>📅 RESERVATIONS</h2>
+    <button id="resv-close">✕</button>
+  </div>
+  <button id="resv-add-btn">＋ ADD RESERVATION</button>
+  <div id="resv-list"><div id="resv-empty">No reservations yet</div></div>
+</div>
+
+<!-- ── Reservation add/edit modal ── -->
+<div id="resv-modal">
+  <div id="resv-box">
+    <h3 id="resv-modal-title">ADD RESERVATION</h3>
+    <div class="resv-field">
+      <label>NAME</label>
+      <input id="resv-name" class="resv-input" type="text" maxlength="40" placeholder="Guest name">
+    </div>
+    <div class="resv-row">
+      <div class="resv-field">
+        <label>DATE</label>
+        <input id="resv-date" class="resv-input" type="date">
+      </div>
+      <div class="resv-field">
+        <label>TIME</label>
+        <input id="resv-time" class="resv-input" type="time">
+      </div>
+    </div>
+    <div class="resv-row">
+      <div class="resv-field">
+        <label>PARTY SIZE</label>
+        <input id="resv-party" class="resv-input" type="number" min="1" max="14" placeholder="2">
+      </div>
+      <div class="resv-field">
+        <label>PHONE</label>
+        <input id="resv-phone" class="resv-input" type="tel" placeholder="Optional">
+      </div>
+    </div>
+    <div class="resv-field">
+      <label>NOTES</label>
+      <input id="resv-notes-input" class="resv-input" type="text" maxlength="80" placeholder="Birthday, allergies, etc.">
+    </div>
+    <div class="resv-modal-actions">
+      <button id="resv-save" class="resv-modal-btn save">SAVE</button>
+      <button id="resv-cancel" class="resv-modal-btn cancel">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 <div id="wl-overlay"></div>
 <div id="wl-drawer">
   <div id="wl-head">
@@ -470,6 +650,7 @@
   var wlRef = firebase.database().ref('waitlist');
   var tablesRef = firebase.database().ref('tables');
   var tableTurnsRef = firebase.database().ref('tableTurns');
+  var resvRef = firebase.database().ref('reservations');
   var totalTablesRef = firebase.database().ref('meta/totalTables');
   var syncingRemote = false; // true while applying a remote table-state update, to avoid write-back loops
   var avgTurnMinutes = null; // rolling avg of how long a table stays occupied, learned from real clears
@@ -838,6 +1019,201 @@
     var todayText = 'Today: '+today.count+' seated' + (today.avg!==null ? (' · avg '+today.avg+' min') : '');
     wlInfoEl.textContent = estText + '  ·  ' + todayText;
   }
+
+  // ── RESERVATIONS ─────────────────────────────────────────────
+  var resvData = {};
+  var resvEditId = null;
+  var resvAlertedIds = {};
+  var ALERT_MINS = 15; // alert this many minutes before reservation time
+  var resvBtnEl   = document.getElementById('btn-resv');
+  var resvBadge   = document.getElementById('resv-badge');
+  var resvOverlay = document.getElementById('resv-overlay');
+  var resvDrawer  = document.getElementById('resv-drawer');
+  var resvClose   = document.getElementById('resv-close');
+  var resvAddBtn  = document.getElementById('resv-add-btn');
+  var resvListEl  = document.getElementById('resv-list');
+  var resvEmptyEl = document.getElementById('resv-empty');
+  var resvModal   = document.getElementById('resv-modal');
+  var resvSave    = document.getElementById('resv-save');
+  var resvCancelBtn = document.getElementById('resv-cancel');
+  // form fields
+  var fName  = document.getElementById('resv-name');
+  var fDate  = document.getElementById('resv-date');
+  var fTime  = document.getElementById('resv-time');
+  var fParty = document.getElementById('resv-party');
+  var fPhone = document.getElementById('resv-phone');
+  var fNotes = document.getElementById('resv-notes-input');
+  var resvModalTitle = document.getElementById('resv-modal-title');
+
+  function openResvDrawer()  { resvOverlay.classList.add('show'); resvDrawer.classList.add('show'); }
+  function closeResvDrawer() { resvOverlay.classList.remove('show'); resvDrawer.classList.remove('show'); }
+  resvBtnEl.addEventListener('click', openResvDrawer);
+  resvClose.addEventListener('click', closeResvDrawer);
+  resvOverlay.addEventListener('click', closeResvDrawer);
+
+  function openResvModal(id) {
+    resvEditId = id || null;
+    if (id && resvData[id]) {
+      var r = resvData[id];
+      resvModalTitle.textContent = 'EDIT RESERVATION';
+      fName.value  = r.name  || '';
+      fDate.value  = r.date  || '';
+      fTime.value  = r.time  || '';
+      fParty.value = r.party || '';
+      fPhone.value = r.phone || '';
+      fNotes.value = r.notes || '';
+    } else {
+      resvModalTitle.textContent = 'ADD RESERVATION';
+      fName.value=''; fDate.value=''; fTime.value='';
+      fParty.value=''; fPhone.value=''; fNotes.value='';
+      // default to today
+      var d = new Date();
+      fDate.value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    }
+    resvModal.classList.add('show');
+  }
+  function closeResvModal() { resvModal.classList.remove('show'); resvEditId=null; }
+
+  resvAddBtn.addEventListener('click', function(){ closeResvDrawer(); openResvModal(null); });
+  resvCancelBtn.addEventListener('click', closeResvModal);
+  resvModal.addEventListener('click', function(e){ if (e.target===resvModal) closeResvModal(); });
+
+  resvSave.addEventListener('click', function(){
+    var name  = fName.value.trim();
+    var date  = fDate.value;
+    var time  = fTime.value;
+    var party = parseInt(fParty.value)||0;
+    if (!name || !date || !time || !party) { return; }
+    var data = {
+      name:name, date:date, time:time, party:party,
+      phone:fPhone.value.trim(), notes:fNotes.value.trim()
+    };
+    if (resvEditId) {
+      resvRef.child(resvEditId).update(data);
+    } else {
+      resvRef.push(data);
+    }
+    closeResvModal();
+  });
+
+  // Seat reservation: moves to waitlist and removes from reservations
+  function seatReservation(id) {
+    var r = resvData[id];
+    if (!r) return;
+    wlRef.push({
+      name: r.name,
+      party: r.party,
+      phone: r.phone || '',
+      notes: (r.notes ? r.notes+' ' : '')+'[Reservation]',
+      status: 'waiting',
+      joinedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    resvRef.child(id).remove();
+  }
+
+  function resvTimeMs(r) {
+    if (!r.date || !r.time) return null;
+    return new Date(r.date+'T'+r.time).getTime();
+  }
+
+  function renderResv() {
+    var ids = Object.keys(resvData);
+    var now = Date.now();
+    // sort by datetime ascending
+    ids.sort(function(a,b){
+      return (resvTimeMs(resvData[a])||0)-(resvTimeMs(resvData[b])||0);
+    });
+    // badge: count upcoming within 60 min
+    var soonCount = ids.filter(function(id){
+      var t = resvTimeMs(resvData[id]);
+      return t && (t-now) <= 60*60000 && (t-now) > -30*60000;
+    }).length;
+    if (soonCount) { resvBadge.textContent=soonCount; resvBadge.classList.add('show'); resvBtnEl.classList.add('has-soon'); }
+    else           { resvBadge.classList.remove('show'); resvBtnEl.classList.remove('has-soon'); }
+
+    if (!ids.length) {
+      resvListEl.innerHTML=''; resvListEl.appendChild(resvEmptyEl); return;
+    }
+    resvListEl.innerHTML='';
+    ids.forEach(function(id){
+      var r = resvData[id];
+      var t = resvTimeMs(r);
+      var diffMin = t ? Math.round((t-now)/60000) : null;
+      var cls = '';
+      if (diffMin!==null) {
+        if (diffMin <= 0 && diffMin > -60) cls='resv-now';
+        else if (diffMin <= ALERT_MINS && diffMin > 0) cls='resv-soon';
+      }
+      // Auto-alert with sound when crossing into ≤15 min
+      if (cls==='resv-soon' || cls==='resv-now') {
+        if (!resvAlertedIds[id]) {
+          resvAlertedIds[id] = true;
+          playResvAlert();
+        }
+      }
+      // Auto-move to waitlist when time arrives (within 5 min past)
+      if (diffMin !== null && diffMin <= 0 && diffMin >= -5) {
+        if (!r._autoMoved) {
+          resvRef.child(id).update({_autoMoved:true});
+          seatReservation(id);
+          return;
+        }
+      }
+      var dateLabel = r.date ? r.date.slice(5).replace('-','/') : '?';
+      var timeLabel = r.time ? r.time.slice(0,5) : '?';
+      var diffLabel = diffMin===null ? '' :
+        diffMin===0 ? ' · NOW' :
+        diffMin > 0 ? ' · in '+diffMin+'m' :
+        ' · '+Math.abs(diffMin)+'m ago';
+      var card = document.createElement('div');
+      card.className = 'resv-card '+cls;
+      card.innerHTML =
+        '<div class="resv-top"><span class="resv-name">'+escapeHtml(r.name)+'</span>'+
+        '<span class="resv-when">'+dateLabel+' '+timeLabel+diffLabel+'</span></div>'+
+        '<div class="resv-meta">👤 '+(r.party||'?')+(r.phone?' · 📱 '+escapeHtml(r.phone):'')+'</div>'+
+        (r.notes?'<div class="resv-notes">'+escapeHtml(r.notes)+'</div>':'')+
+        '<div class="resv-actions">'+
+          '<button class="resv-btn resv-seat-btn" data-id="'+id+'" data-act="seat">➡️ SEAT</button>'+
+          '<button class="resv-btn resv-delete-btn" data-id="'+id+'" data-act="delete">✕</button>'+
+        '</div>';
+      // edit on card tap (not on buttons)
+      card.addEventListener('click', function(e){
+        if (e.target.closest('.resv-btn')) return;
+        closeResvDrawer(); openResvModal(id);
+      });
+      resvListEl.appendChild(card);
+    });
+  }
+
+  // Simple beep for reservation alert using Web Audio API
+  function playResvAlert() {
+    try {
+      var ctx = new (window.AudioContext||window.webkitAudioContext)();
+      [0, 250, 500].forEach(function(delay){
+        var osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.frequency.value = 880; g.gain.value = 0.25;
+        osc.start(ctx.currentTime + delay/1000);
+        osc.stop(ctx.currentTime + delay/1000 + 0.18);
+      });
+    } catch(e){}
+  }
+
+  resvListEl.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('.resv-btn');
+    if (!btn) return;
+    var id=btn.getAttribute('data-id'), act=btn.getAttribute('data-act');
+    if (act==='seat')   seatReservation(id);
+    if (act==='delete') resvRef.child(id).remove();
+  });
+
+  resvRef.on('value', function(snap){
+    resvData = snap.val() || {};
+    renderResv();
+  });
+
+  // Re-render reservations every 60s to update countdowns
+  setInterval(renderResv, 60000);
 
   // Tick the visible wait times every 30s without a full re-render
   setInterval(function() {
