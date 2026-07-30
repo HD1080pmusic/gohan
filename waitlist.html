@@ -201,7 +201,7 @@
     <button class="party-btn" data-n="14">14</button>
   </div>
 
-  <label id="t-label-phone" for="phone-input">PHONE NUMBER (OPTIONAL)</label>
+  <label id="t-label-phone" for="phone-input">PHONE NUMBER</label>
   <input id="phone-input" type="tel" placeholder="(555) 123-4567" maxlength="20" autocomplete="off">
 
   <label id="t-label-notes">ANYTHING WE SHOULD KNOW? (OPTIONAL)</label>
@@ -261,7 +261,7 @@
       estSuffix: function(m){ return ' · ~'+m+' min estimated wait'; },
       labelName: 'YOUR NAME',
       labelParty: 'PARTY SIZE',
-      labelPhone: 'PHONE NUMBER (OPTIONAL)',
+      labelPhone: 'PHONE NUMBER',
       labelNotes: 'ANYTHING WE SHOULD KNOW? (OPTIONAL)',
       notesPlaceholder: 'Anything else? (optional)',
       submit: 'JOIN WAITLIST',
@@ -282,7 +282,7 @@
       estSuffix: function(m){ return ' · ~'+m+' min de espera estimada'; },
       labelName: 'TU NOMBRE',
       labelParty: 'TAMAÑO DEL GRUPO',
-      labelPhone: 'TELÉFONO (OPCIONAL)',
+      labelPhone: 'NÚMERO DE TELÉFONO',
       labelNotes: '¿ALGO QUE DEBAMOS SABER? (OPCIONAL)',
       notesPlaceholder: '¿Algo más? (opcional)',
       submit: 'UNIRSE A LA LISTA',
@@ -503,8 +503,9 @@
   });
 
   nameInput.addEventListener('input', validate);
+  phoneInput.addEventListener('input', validate);
   function validate() {
-    var ok = nameInput.value.trim().length>0 && selectedParty!==null;
+    var ok = nameInput.value.trim().length>0 && selectedParty!==null && phoneInput.value.trim().length>0;
     submitBtn.disabled = !ok;
   }
 
