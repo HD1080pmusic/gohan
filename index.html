@@ -207,6 +207,7 @@
   }
   .wl-seat   { background:#ffffff; border-color:#1a1a1a; color:#1a1a1a; }
   .wl-remove { background:#ffffff; border-color:#d32323; color:#d32323; }
+  .wl-text   { background:#f8f0d8; border-color:#c9a227; color:#1a1a1a; text-decoration:none; display:flex; align-items:center; justify-content:center; }
   .wl-restore { background:#ffffff; border-color:#1a1a1a; color:#1a1a1a; }
   .wl-delete-perm { background:#ffffff; border-color:#d32323; color:#d32323; }
   .wl-status-badge {
@@ -377,6 +378,7 @@
   }
   .resv-seat-btn   { background:#f8f0d8; border-color:#c9a227; color:#1a1a1a; }
   .resv-delete-btn { background:#ffffff; border-color:#d32323; color:#d32323; }
+  .resv-text-btn   { background:#f8f0d8; border-color:#c9a227; color:#1a1a1a; text-decoration:none; display:flex; align-items:center; justify-content:center; }
   #resv-modal {
     position:fixed; inset:0; z-index:99999;
     background:rgba(0,0,0,.6);
@@ -575,8 +577,8 @@
         <input id="resv-party" class="resv-input" type="number" min="1" max="14" placeholder="2">
       </div>
       <div class="resv-field">
-        <label>PHONE</label>
-        <input id="resv-phone" class="resv-input" type="tel" placeholder="Optional">
+        <label>PHONE *</label>
+        <input id="resv-phone" class="resv-input" type="tel" placeholder="Required">
       </div>
     </div>
     <div class="resv-field">
@@ -758,6 +760,7 @@
         '<div class="wl-meta">👤 '+e.party+(e.phone?' · 📱 '+escapeHtml(e.phone):'')+(e.notes?' · '+escapeHtml(e.notes):'')+'</div>'+
         '<div class="wl-actions">'+
           '<button class="wl-btn wl-seat" data-id="'+id+'" data-act="seat">✅ SEATED</button>'+
+          (e.phone ? '<a class="wl-btn wl-text" href="'+smsLink(e.phone,'Hi '+e.name+'! Your table at Gohan is ready. Please come to the host stand.')+'">TEXT</a>' : '')+
           '<button class="wl-btn wl-remove" data-id="'+id+'" data-act="remove">✕ REMOVE</button>'+
         '</div>';
       wlListEl.appendChild(card);
@@ -870,6 +873,11 @@
   function seatFromWaitlist(wlId, entry, tableId) {
     startTable(tableId, entry.party, entry.name);
     wlRef.child(wlId).update({ status:'seated', seatedAt: firebase.database.ServerValue.TIMESTAMP });
+  }
+
+  function smsLink(phone, body) {
+    var clean = phone.replace(/[^\d+]/g,'');
+    return 'sms:'+clean+'&body='+encodeURIComponent(body);
   }
 
   function escapeHtml(s) {
@@ -1094,7 +1102,16 @@
     var date  = fDate.value;
     var time  = fTime.value;
     var party = parseInt(fParty.value)||0;
-    if (!name || !date || !time || !party) { return; }
+    var phone = fPhone.value.trim();
+    if (!name || !date || !time || !party || !phone) {
+      fName.style.borderColor  = name  ? '' : '#d32323';
+      fDate.style.borderColor  = date  ? '' : '#d32323';
+      fTime.style.borderColor  = time  ? '' : '#d32323';
+      fParty.style.borderColor = party ? '' : '#d32323';
+      fPhone.style.borderColor = phone ? '' : '#d32323';
+      return;
+    }
+    fName.style.borderColor=fDate.style.borderColor=fTime.style.borderColor=fParty.style.borderColor=fPhone.style.borderColor='';
     var data = {
       name:name, date:date, time:time, party:party,
       phone:fPhone.value.trim(), notes:fNotes.value.trim()
@@ -1185,11 +1202,12 @@
         (r.notes?'<div class="resv-notes">'+escapeHtml(r.notes)+'</div>':'')+
         '<div class="resv-actions">'+
           '<button class="resv-btn resv-seat-btn" data-id="'+id+'" data-act="seat">➡️ SEAT</button>'+
+          (r.phone ? '<a class="resv-btn resv-text-btn" href="'+smsLink(r.phone,'Hi '+r.name+'! Reminder: your Gohan reservation is today at '+timeLabel+'. See you soon!')+'">TEXT</a>' : '')+
           '<button class="resv-btn resv-delete-btn" data-id="'+id+'" data-act="delete">✕</button>'+
         '</div>';
       // edit on card tap (not on buttons)
       card.addEventListener('click', function(e){
-        if (e.target.closest('.resv-btn')) return;
+        if (e.target.closest('.resv-btn') || e.target.tagName==='A') return;
         closeResvDrawer(); openResvModal(id);
       });
       resvListEl.appendChild(card);
